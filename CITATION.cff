@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  If you use this specification, please cite it using the metadata from this file.
+type: software
+title: "Royalty Pool Formula v0.1: A Machine-Readable Specification for Permission-Aware Trace-Based Royalty Allocation"
+version: "0.1.0"
+abstract: >-
+  Royalty Pool Formula v0.1 is a machine-readable specification for calculating
+  royalty allocation from permission-aware trace events. The specification
+  defines an auditable workflow in which value is distributed through
+  permission, trace, resonance, and allocation layers. It is implemented as a
+  structured contract using JSON Schema, YAML examples, and GitHub Actions
+  validation, and is designed as a minimal, extensible foundation for
+  trace-based value recirculation and internal accounting workflows.
+authors:
+  - name: "Shidenkai Alpha"
+keywords:
+  - royalty allocation
+  - trace-based allocation
+  - permission-aware systems
+  - provenance
+  - traceability
+  - resonance scoring
+  - JSON Schema
+  - YAML
+  - machine-readable specification
+  - auditability
+  - internal accounting
+  - value recirculation
+license: "SEE LICENSE"
+repository-code: "https://github.com/SamuraiWriter7/royalty-pool-formula"
+url: "https://github.com/SamuraiWriter7/royalty-pool-formula"
+date-released: "2026-04-14"
