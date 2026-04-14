@@ -1,0 +1,343 @@
+spec:
+  id: royalty-pool-formula-v0.1
+  name: Royalty Pool Formula
+  version: "0.1.0"
+  status: draft
+  language: ja
+  objective: >
+    許諾されたアクセスから生じた価値を、起源追跡性・代理属性・共鳴強度に基づいて
+    内部会計単位へ変換し、配分可能な Royalty Pool と Allocation を計算する。
+  design_principles:
+    - permission_first
+    - trace_based_allocation
+    - agency_attribution
+    - value_recirculation
+    - auditability
+    - internal_accounting_unit
+
+context:
+  accounting_unit:
+    name: QCoin
+    type: internal_non_transferable_unit
+    description: >
+      外部通貨ではなく、配分計算のための内部会計単位。
+  pipeline:
+    - permission
+    - trace
+    - resonance
+    - allocation
+    - recirculation
+
+pool:
+  definition:
+    expression: "max(0, Gross_t - Ops_t - Reserve_t - Hold_t)"
+    output: Pool_t
+  variables:
+    Gross_t:
+      type: float
+      domain: ">= 0"
+      description: 集計期間 t に発生した総価値
+    Ops_t:
+      type: float
+      domain: ">= 0"
+      description: 運営コスト
+    Reserve_t:
+      type: float
+      domain: ">= 0"
+      description: 将来精算・調整用の留保
+    Hold_t:
+      type: float
+      domain: ">= 0"
+      description: 紛争・不正検知・未確定分の保留
+    Pool_t:
+      type: float
+      domain: ">= 0"
+      description: 配分可能な原資
+
+resonance_score:
+  definition:
+    expression: >
+      R_i_t = P_i_t * O_i_t * A_i_t *
+      sum_e_in_E_i_t(
+        EventWeight_e * Similarity_i_e * Confidence_i_e * Decay_i_e
+      )
+    output: R_i_t
+  variables:
+    P_i_t:
+      type: float
+      domain: "[0, 1]"
+      description: 許諾係数
+      semantics:
+        "1.0": 許諾内
+        "0.0": 禁止用途
+        partial: 一部制限付き許諾
+    O_i_t:
+      type: float
+      domain: "[0, 1]"
+      description: 起源追跡係数
+    A_i_t:
+      type: float
+      domain: "[0, 1]"
+      description: 代理属性係数
+    E_i_t:
+      type: event_set
+      description: 集計期間 t における痕跡 i の関連イベント集合
+    R_i_t:
+      type: float
+      domain: ">= 0"
+      description: 起源候補 i の寄与スコア
+
+event_score:
+  definition:
+    expression: >
+      EventScore_i_e =
+      EventWeight_e *
+      Similarity_i_e *
+      Confidence_i_e *
+      Decay_i_e
+    output: EventScore_i_e
+  variables:
+    EventWeight_e:
+      type: float
+      domain: "> 0"
+      description: イベント種別の重み
+    Similarity_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 痕跡 i とイベント e の共鳴・寄与強度
+    Confidence_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 推定信頼度
+    Decay_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 時間減衰・鮮度補正
+
+similarity:
+  definition:
+    expression: >
+      Similarity_i_e =
+      alpha * SimBehavior_i_e +
+      beta * SimSemantic_i_e +
+      gamma * SimStructure_i_e
+    output: Similarity_i_e
+  constraints:
+    - "alpha + beta + gamma = 1"
+    - "alpha >= 0"
+    - "beta >= 0"
+    - "gamma >= 0"
+  variables:
+    SimBehavior_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 行動痕跡の一致度
+    SimSemantic_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 意味・思想の一致度
+    SimStructure_i_e:
+      type: float
+      domain: "[0, 1]"
+      description: 構造寄与の一致度
+  defaults:
+    alpha: 0.15
+    beta: 0.55
+    gamma: 0.30
+
+allocation:
+  share_definition:
+    expression: "Share_i_t = R_i_t / sum_j(R_j_t)"
+    output: Share_i_t
+  amount_definition:
+    expression: "Allocation_i_t = Pool_t * Share_i_t"
+    output: Allocation_i_t
+  variables:
+    Share_i_t:
+      type: float
+      domain: "[0, 1]"
+      description: 配分率
+    Allocation_i_t:
+      type: float
+      domain: ">= 0"
+      description: 起源候補 i への配分額
+  constraints:
+    - "sum_i(Share_i_t) = 1 when sum_j(R_j_t) > 0"
+    - "Allocation_i_t = 0 when Pool_t = 0"
+    - "Allocation_i_t = 0 when R_i_t = 0"
+
+event_weights:
+  description: 初期推奨のイベント重み
+  defaults:
+    view: 0.2
+    summarize: 0.5
+    quote: 0.7
+    transform_or_generate_with_dependence: 1.0
+
+policy_rules:
+  permission_rules:
+    - condition: prohibited_use
+      action: "P_i_t = 0"
+    - condition: permitted_use
+      action: "P_i_t = 1"
+    - condition: restricted_use
+      action: "0 < P_i_t < 1"
+  origin_rules:
+    - condition: origin_clear
+      action: "O_i_t = 1"
+    - condition: origin_uncertain
+      action: "0 <= O_i_t < 1"
+    - condition: origin_unknown
+      action: "O_i_t = 0"
+  agency_rules:
+    - condition: agency_clear
+      action: "A_i_t = 1"
+    - condition: agency_uncertain
+      action: "0 <= A_i_t < 1"
+    - condition: agency_unknown
+      action: "A_i_t = 0"
+
+extensions:
+  v2_bias_controls:
+    enabled: false
+    description: 長さバイアス・反復スパム・不確実性の補正
+    formulas:
+      length_penalty:
+        expression: "L_i_e = 1 / (1 + lambda * log(1 + tokens_i_e))"
+      repetition_penalty:
+        expression: "N_i_e = 1 / (1 + mu * repeat_i_e)"
+      uncertainty_penalty:
+        expression: "U_i_e = 1 - sigma_i_e"
+      extended_event_score:
+        expression: >
+          EventScore_i_e =
+          EventWeight_e *
+          Similarity_i_e *
+          Confidence_i_e *
+          Decay_i_e *
+          L_i_e *
+          N_i_e *
+          U_i_e
+    variables:
+      lambda:
+        type: float
+        domain: ">= 0"
+        description: 長さバイアス補正の係数
+      mu:
+        type: float
+        domain: ">= 0"
+        description: 反復スパム補正の係数
+      tokens_i_e:
+        type: integer
+        domain: ">= 0"
+        description: 対象イベントのトークン数
+      repeat_i_e:
+        type: integer
+        domain: ">= 0"
+        description: 近似イベントの反復回数
+      sigma_i_e:
+        type: float
+        domain: "[0, 1]"
+        description: 不確実性スコア
+
+  upstream_recirculation:
+    enabled: false
+    description: 派生構造から元構造への上流還流
+    formulas:
+      direct:
+        expression: "Direct_i_t = (1 - rho_i) * Allocation0_i_t"
+      upstream:
+        expression: >
+          Upstream_k_t =
+          sum_i(
+            rho_i * Allocation0_i_t * lineage_i_to_k
+          )
+    variables:
+      rho_i:
+        type: float
+        domain: "[0, 1]"
+        description: 上流還流率
+      Allocation0_i_t:
+        type: float
+        domain: ">= 0"
+        description: 一次配分額
+      lineage_i_to_k:
+        type: float
+        domain: "[0, 1]"
+        description: 派生元 k への系譜重み
+    constraints:
+      - "sum_k(lineage_i_to_k) = 1"
+
+validation:
+  rules:
+    - name: non_negative_pool
+      expression: "Pool_t >= 0"
+    - name: normalized_similarity_weights
+      expression: "alpha + beta + gamma = 1"
+    - name: bounded_similarity_components
+      expression: >
+        0 <= SimBehavior_i_e <= 1 and
+        0 <= SimSemantic_i_e <= 1 and
+        0 <= SimStructure_i_e <= 1
+    - name: bounded_policy_coefficients
+      expression: >
+        0 <= P_i_t <= 1 and
+        0 <= O_i_t <= 1 and
+        0 <= A_i_t <= 1
+    - name: normalized_shares
+      expression: "sum_i(Share_i_t) = 1 when sum_j(R_j_t) > 0"
+    - name: zero_pool_zero_allocation
+      expression: "Allocation_i_t = 0 when Pool_t = 0"
+
+sample:
+  inputs:
+    Gross_t: 100000
+    Ops_t: 10000
+    Reserve_t: 5000
+    Hold_t: 5000
+    candidates:
+      - id: origin_1
+        P_i_t: 1.0
+        O_i_t: 1.0
+        A_i_t: 1.0
+        aggregated_R_i_t: 40
+      - id: origin_2
+        P_i_t: 1.0
+        O_i_t: 1.0
+        A_i_t: 1.0
+        aggregated_R_i_t: 35
+      - id: origin_3
+        P_i_t: 1.0
+        O_i_t: 1.0
+        A_i_t: 1.0
+        aggregated_R_i_t: 25
+  outputs:
+    Pool_t: 80000
+    allocations:
+      - id: origin_1
+        Share_i_t: 0.4
+        Allocation_i_t: 32000
+      - id: origin_2
+        Share_i_t: 0.35
+        Allocation_i_t: 28000
+      - id: origin_3
+        Share_i_t: 0.25
+        Allocation_i_t: 20000
+
+implementation_notes:
+  recommended_storage:
+    - ledger_db
+    - allocation_report
+    - trace_event_log
+  recommended_order:
+    - validate_permission
+    - compute_similarity
+    - aggregate_resonance_score
+    - compute_pool
+    - normalize_share
+    - allocate
+    - optionally_recirculate
+  remarks:
+    - 可読性重視の人間可読 YAML 仕様
+    - 数式は expression 文字列として保持
+    - JSON Schema 化や sample.yaml 検証の土台として利用可能
