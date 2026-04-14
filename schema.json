@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schema/royalty-pool-formula-v0.1.schema.json",
+  "title": "Royalty Pool Formula v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec",
+    "context",
+    "pool",
+    "resonance_score",
+    "event_score",
+    "similarity",
+    "allocation",
+    "event_weights",
+    "policy_rules",
+    "extensions",
+    "validation",
+    "sample",
+    "implementation_notes"
+  ],
+  "properties": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "version",
+        "status",
+        "language",
+        "objective",
+        "design_principles"
+      ],
+      "properties": {
+        "id": { "type": "string", "const": "royalty-pool-formula-v0.1" },
+        "name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "stable", "deprecated"]
+        },
+        "language": { "type": "string" },
+        "objective": { "type": "string" },
+        "design_principles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accounting_unit", "pipeline"],
+      "properties": {
+        "accounting_unit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "type", "description"],
+          "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string" },
+            "description": { "type": "string" }
+          }
+        },
+        "pipeline": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "pool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition", "variables"],
+      "properties": {
+        "definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "variables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variableDefinition"
+          }
+        }
+      }
+    },
+    "resonance_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition", "variables"],
+      "properties": {
+        "definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "variables": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "P_i_t": {
+              "allOf": [
+                { "$ref": "#/$defs/variableDefinition" },
+                {
+                  "type": "object",
+                  "required": ["semantics"],
+                  "properties": {
+                    "semantics": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["1.0", "0.0", "partial"],
+                      "properties": {
+                        "1.0": { "type": "string" },
+                        "0.0": { "type": "string" },
+                        "partial": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "patternProperties": {
+            "^(O_i_t|A_i_t|E_i_t|R_i_t)$": {
+              "$ref": "#/$defs/variableDefinition"
+            }
+          }
+        }
+      }
+    },
+    "event_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition", "variables"],
+      "properties": {
+        "definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "variables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variableDefinition"
+          }
+        }
+      }
+    },
+    "similarity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition", "constraints", "variables", "defaults"],
+      "properties": {
+        "definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "variables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variableDefinition"
+          }
+        },
+        "defaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["alpha", "beta", "gamma"],
+          "properties": {
+            "alpha": { "type": "number", "minimum": 0, "maximum": 1 },
+            "beta": { "type": "number", "minimum": 0, "maximum": 1 },
+            "gamma": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["share_definition", "amount_definition", "variables", "constraints"],
+      "properties": {
+        "share_definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "amount_definition": { "$ref": "#/$defs/expressionOutputObject" },
+        "variables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variableDefinition"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "event_weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "defaults"],
+      "properties": {
+        "description": { "type": "string" },
+        "defaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "view",
+            "summarize",
+            "quote",
+            "transform_or_generate_with_dependence"
+          ],
+          "properties": {
+            "view": { "type": "number", "exclusiveMinimum": 0 },
+            "summarize": { "type": "number", "exclusiveMinimum": 0 },
+            "quote": { "type": "number", "exclusiveMinimum": 0 },
+            "transform_or_generate_with_dependence": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "policy_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["permission_rules", "origin_rules", "agency_rules"],
+      "properties": {
+        "permission_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conditionActionRule" }
+        },
+        "origin_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conditionActionRule" }
+        },
+        "agency_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conditionActionRule" }
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v2_bias_controls", "upstream_recirculation"],
+      "properties": {
+        "v2_bias_controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "description", "formulas", "variables"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "description": { "type": "string" },
+            "formulas": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "length_penalty",
+                "repetition_penalty",
+                "uncertainty_penalty",
+                "extended_event_score"
+              ],
+              "properties": {
+                "length_penalty": { "$ref": "#/$defs/expressionOnlyObject" },
+                "repetition_penalty": { "$ref": "#/$defs/expressionOnlyObject" },
+                "uncertainty_penalty": { "$ref": "#/$defs/expressionOnlyObject" },
+                "extended_event_score": { "$ref": "#/$defs/expressionOnlyObject" }
+              }
+            },
+            "variables": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/variableDefinition"
+              }
+            }
+          }
+        },
+        "upstream_recirculation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "description", "formulas", "variables", "constraints"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "description": { "type": "string" },
+            "formulas": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["direct", "upstream"],
+              "properties": {
+                "direct": { "$ref": "#/$defs/expressionOnlyObject" },
+                "upstream": { "$ref": "#/$defs/expressionOnlyObject" }
+              }
+            },
+            "variables": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/variableDefinition"
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "expression"],
+            "properties": {
+              "name": { "type": "string" },
+              "expression": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "outputs"],
+      "properties": {
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Gross_t", "Ops_t", "Reserve_t", "Hold_t", "candidates"],
+          "properties": {
+            "Gross_t": { "type": "number", "minimum": 0 },
+            "Ops_t": { "type": "number", "minimum": 0 },
+            "Reserve_t": { "type": "number", "minimum": 0 },
+            "Hold_t": { "type": "number", "minimum": 0 },
+            "candidates": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "P_i_t", "O_i_t", "A_i_t", "aggregated_R_i_t"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "P_i_t": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "O_i_t": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "A_i_t": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "aggregated_R_i_t": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Pool_t", "allocations"],
+          "properties": {
+            "Pool_t": { "type": "number", "minimum": 0 },
+            "allocations": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "Share_i_t", "Allocation_i_t"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "Share_i_t": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "Allocation_i_t": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "implementation_notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recommended_storage", "recommended_order", "remarks"],
+      "properties": {
+        "recommended_storage": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "recommended_order": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remarks": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "expressionOutputObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "output"],
+      "properties": {
+        "expression": { "type": "string" },
+        "output": { "type": "string" }
+      }
+    },
+    "expressionOnlyObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression"],
+      "properties": {
+        "expression": { "type": "string" }
+      }
+    },
+    "variableDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "description"],
+      "properties": {
+        "type": { "type": "string" },
+        "domain": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "conditionActionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition", "action"],
+      "properties": {
+        "condition": { "type": "string" },
+        "action": { "type": "string" }
+      }
+    }
+  }
+}
