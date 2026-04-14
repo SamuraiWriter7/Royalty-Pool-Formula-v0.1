@@ -3,13 +3,13 @@ name: Validate Specs
 on:
   push:
     paths:
-      - "schema/**"
-      - "examples/**"
+      - "schema.json"
+      - "sample.yaml"
       - ".github/workflows/validate-specs.yml"
   pull_request:
     paths:
-      - "schema/**"
-      - "examples/**"
+      - "schema.json"
+      - "sample.yaml"
       - ".github/workflows/validate-specs.yml"
   workflow_dispatch:
 
@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -36,15 +36,15 @@ jobs:
           pwd
           find . -maxdepth 3 -type f | sort
 
-      - name: Validate royalty-pool-formula-v0.1.sample.yaml
+      - name: Validate sample.yaml
         run: |
           python - <<'PY'
           import json
           import yaml
           from jsonschema import Draft202012Validator
 
-          schema_path = "schema/royalty-pool-formula-v0.1.schema.json"
-          sample_path = "examples/royalty-pool-formula-v0.1.sample.yaml"
+          schema_path = "schema.json"
+          sample_path = "sample.yaml"
 
           with open(schema_path, "r", encoding="utf-8") as f:
               schema = json.load(f)
@@ -53,7 +53,7 @@ jobs:
               sample = yaml.safe_load(f)
 
           validator = Draft202012Validator(schema)
-          errors = sorted(validator.iter_errors(sample), key=lambda e: e.path)
+          errors = sorted(validator.iter_errors(sample), key=lambda e: list(e.path))
 
           if errors:
               for err in errors:
@@ -63,5 +63,5 @@ jobs:
                   print("-" * 80)
               raise SystemExit(1)
 
-          print("Validation passed: royalty-pool-formula-v0.1.sample.yaml")
+          print("Validation passed: sample.yaml")
           PY
