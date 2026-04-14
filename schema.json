@@ -88,46 +88,45 @@
         }
       }
     },
-    "resonance_score": {
+  "resonance_score": {
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["definition", "variables"],
+  "properties": {
+    "definition": { "$ref": "#/$defs/expressionOutputObject" },
+    "variables": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["definition", "variables"],
       "properties": {
-        "definition": { "$ref": "#/$defs/expressionOutputObject" },
-        "variables": {
+        "P_i_t": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
+          "required": ["type", "description", "semantics"],
           "properties": {
-            "P_i_t": {
-              "allOf": [
-                { "$ref": "#/$defs/variableDefinition" },
-                {
-                  "type": "object",
-                  "required": ["semantics"],
-                  "properties": {
-                    "semantics": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": ["1.0", "0.0", "partial"],
-                      "properties": {
-                        "1.0": { "type": "string" },
-                        "0.0": { "type": "string" },
-                        "partial": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          "patternProperties": {
-            "^(O_i_t|A_i_t|E_i_t|R_i_t)$": {
-              "$ref": "#/$defs/variableDefinition"
+            "type": { "type": "string" },
+            "domain": { "type": "string" },
+            "description": { "type": "string" },
+            "semantics": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["1.0", "0.0", "partial"],
+              "properties": {
+                "1.0": { "type": "string" },
+                "0.0": { "type": "string" },
+                "partial": { "type": "string" }
+              }
             }
           }
         }
+      },
+      "patternProperties": {
+        "^(O_i_t|A_i_t|E_i_t|R_i_t)$": {
+          "$ref": "#/$defs/variableDefinition"
+        }
       }
-    },
+    }
+  }
+}
     "event_score": {
       "type": "object",
       "additionalProperties": false,
