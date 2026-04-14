@@ -126,7 +126,7 @@
       }
     }
   }
-}
+},
     "event_score": {
       "type": "object",
       "additionalProperties": false,
